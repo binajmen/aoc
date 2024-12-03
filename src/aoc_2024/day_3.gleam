@@ -1,55 +1,53 @@
+import gleam/bit_array
 import gleam/int
-import gleam/list
-import gleam/option.{Some}
-import gleam/regexp.{type Match}
+import gleam/result
 
-pub fn pt_1(input: String) {
-  let assert Ok(re) = regexp.from_string("mul\\((\\d{1,3}),(\\d{1,3})\\)")
-  let matches = regexp.scan(re, input)
-
-  list.fold(matches, 0, fn(total, match) {
-    let regexp.Match(_, submatches) = match
-    let assert [Some(left), Some(right)] = submatches
-    let assert Ok(left) = int.parse(left)
-    let assert Ok(right) = int.parse(right)
-    total + { left * right }
-  })
-}
-
-type Condition {
+type Filter {
+  No
   Do
   Dont
 }
 
-pub fn pt_2(input: String) {
-  let assert Ok(re) =
-    regexp.from_string("(mul\\((\\d{1,3}),(\\d{1,3})\\)|do\\(\\)|don't\\(\\))")
-  let matches = regexp.scan(re, input)
-  handle_matches(matches, Do, 0)
+pub fn parse(input: String) -> BitArray {
+  bit_array.from_string(input)
 }
 
-fn handle_matches(matches: List(Match), condition: Condition, total: Int) {
-  case matches {
-    [] -> total
-    _ -> {
-      let assert [match, ..rest] = matches
-      let regexp.Match(_, submatches) = match
+pub fn pt_1(input: BitArray) -> Int {
+  parser(input, No, 0)
+}
 
-      case submatches {
-        [_, Some(left), Some(right)] -> {
-          case condition {
-            Do -> {
-              let assert Ok(left) = int.parse(left)
-              let assert Ok(right) = int.parse(right)
-              handle_matches(rest, condition, total + { left * right })
-            }
-            Dont -> handle_matches(rest, condition, total)
-          }
-        }
-        [Some("do()")] -> handle_matches(rest, Do, total)
-        [Some("don't()")] -> handle_matches(rest, Dont, total)
-        _ -> handle_matches(rest, condition, total)
-      }
+pub fn pt_2(input: BitArray) -> Int {
+  parser(input, Do, 0)
+}
+
+fn parser(input: BitArray, filter: Filter, total: Int) -> Int {
+  case filter, input {
+    Dont, <<"do()", rest:bytes>> -> parser(rest, Do, total)
+    Dont, <<_, rest:bytes>> -> parser(rest, filter, total)
+    Do, <<"don't()", rest:bytes>> -> parser(rest, Dont, total)
+    _, <<>> -> total
+    _, <<"mul(", a:bytes-size(1), ",", b:bytes-size(1), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(1), ",", b:bytes-size(2), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(1), ",", b:bytes-size(3), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(2), ",", b:bytes-size(1), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(2), ",", b:bytes-size(2), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(2), ",", b:bytes-size(3), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(3), ",", b:bytes-size(1), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(3), ",", b:bytes-size(2), ")", rest:bytes>>
+    | _, <<"mul(", a:bytes-size(3), ",", b:bytes-size(3), ")", rest:bytes>>
+    -> {
+      let a = bytes_to_int(a)
+      let b = bytes_to_int(b)
+      parser(rest, filter, total + { a * b })
     }
+    _, <<_, rest:bytes>> -> parser(rest, filter, total)
+    _, _ -> panic as "this should not happen"
   }
+}
+
+fn bytes_to_int(a: BitArray) -> Int {
+  bit_array.to_string(a)
+  |> result.unwrap("0")
+  |> int.parse()
+  |> result.unwrap(0)
 }
