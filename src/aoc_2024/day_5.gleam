@@ -41,18 +41,12 @@ pub fn parse(input: String) -> #(Graph, Manuals) {
 
 pub fn pt_1(input: #(Graph, Manuals)) -> Int {
   let #(graph, manuals) = input
-  let assert [manual, ..] = manuals
-  let res = top_sort(graph, manual)
-
   list.filter(manuals, fn(manual) { is_ordered(graph, manual) })
   |> list.fold(0, fn(total, manual) { total + extract_middle(manual) })
 }
 
 pub fn pt_2(input: #(Graph, Manuals)) -> Int {
   let #(graph, manuals) = input
-  let assert [manual, ..] = manuals
-  let res = top_sort(graph, manual)
-
   list.filter(manuals, fn(manual) { !is_ordered(graph, manual) })
   |> list.map(fn(manual) { top_sort(graph, manual) })
   |> list.fold(0, fn(total, manual) { total + extract_middle(manual) })
