@@ -97,32 +97,6 @@ fn walk(map: Map, coord: Coordinate, dir: Direction) -> Result(Map, String) {
   }
 }
 
-fn detect_cycle(map: Map, coord: Coordinate, dir: Direction) -> String {
-  let map = updade_step(map, coord, dir, "X")
-  let next_coord = next_coordinate(coord, dir)
-  let next_step = dict.get(map, next_coord)
-  case next_step {
-    Ok(Step("#", _)) -> detect_cycle(map, coord, rotate(dir))
-    Ok(Step(_, dirs)) -> {
-      case set.contains(dirs, dir) {
-        True -> "O"
-        False -> detect_cycle(map, next_coord, dir)
-      }
-    }
-    Error(_) -> "X"
-  }
-}
-
-fn updade_step(map: Map, coord: Coordinate, dir: Direction, foot: String) -> Map {
-  dict.upsert(map, coord, fn(step) {
-    case step {
-      Some(Step("O", dirs)) -> Step("O", set.insert(dirs, dir))
-      Some(Step(_, dirs)) -> Step(foot, set.insert(dirs, dir))
-      None -> panic as "out of boundaries"
-    }
-  })
-}
-
 fn next_coordinate(coord: Coordinate, dir: Direction) {
   case dir {
     Up -> #(coord.0 - 1, coord.1)
