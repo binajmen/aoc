@@ -3,6 +3,7 @@ import gleam/list.{Continue, Stop}
 import gleam/option.{None, Some}
 import gleam/set.{type Set}
 import gleam/string
+import pocket_watch
 
 pub type Direction {
   Up
@@ -32,6 +33,8 @@ pub fn parse(input: String) -> Map {
 }
 
 pub fn pt_1(map: Map) {
+  use <- pocket_watch.simple("pt_1")
+
   let guard_coord = find_guard(map)
   let assert Ok(path) = walk(map, guard_coord, Up)
 
@@ -46,6 +49,8 @@ pub fn pt_1(map: Map) {
 }
 
 pub fn pt_2(map: Map) {
+  use <- pocket_watch.simple("pt_2")
+
   let guard_coord = find_guard(map)
 
   dict.fold(map, 0, fn(cycles, coord, step) {
