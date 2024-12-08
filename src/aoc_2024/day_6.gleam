@@ -1,6 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/list.{Continue, Stop}
 import gleam/option.{None, Some}
+import gleam/otp/task
 import gleam/set.{type Set}
 import gleam/string
 import pocket_watch
@@ -48,7 +49,7 @@ pub fn pt_1(map: Map) {
   })
 }
 
-pub fn pt_2(map: Map) {
+pub fn pt_2_non_parallel(map: Map) {
   use <- pocket_watch.simple("pt_2")
 
   let guard_coord = find_guard(map)
@@ -67,6 +68,45 @@ pub fn pt_2(map: Map) {
       }
       _ -> cycles
     }
+  })
+}
+
+pub fn pt_2(map: Map) {
+  use <- pocket_watch.simple("pt_2_parallel")
+
+  let guard_coord = find_guard(map)
+
+  let coords =
+    dict.filter(map, fn(_coord, step) {
+      case step {
+        Step(".", _) -> True
+        _ -> False
+      }
+    })
+    |> dict.keys()
+
+  let tasks =
+    list.map(coords, fn(coord) {
+      task.async(fn() {
+        case dict.get(map, coord) {
+          Ok(Step(".", _)) -> {
+            let path =
+              dict.insert(map, coord, Step("#", set.new()))
+              |> walk(guard_coord, Up)
+            case path {
+              Ok(_) -> 0
+              Error("cycle") -> 1
+              Error(_) -> panic as "should not happen"
+            }
+          }
+          _ -> 0
+        }
+      })
+    })
+
+  list.fold(tasks, 0, fn(total, task) {
+    let assert Ok(result) = task.try_await(task, 1000)
+    total + result
   })
 }
 
